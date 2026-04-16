@@ -28,5 +28,9 @@ End goal: you can view your service’s health and access it at any time from Hy
 It also keeps services in sync, running automations to handle things like:
  - Ensuring your uploaded SSH keys work across all services
  - Keeping Docker images, system packages, etc. up to date
- - Making sure certain system tools (eg. your neovim config you use for editing files on other machines) exists across services
+ - Making sure certain system tools (eg. your neovim config) exists across services
  - And much more!
+
+## How do I install?
+
+... You don't. Not yet, atleast! Hydroxide is still in active development. Check back from time to time.
