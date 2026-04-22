@@ -17,19 +17,75 @@ However, for the same reason people who praise Linux so much stick to simpler di
 
 ## How does it actually work?
 
-Hydroxide configures “services” using YAML. These services are stored in a catalog, where they can then be installed. Once installed, Hydroxide reads the YAML like a cooking recipe:
- - Asks for service-specific options: "Do you want GPU passthrough? Where's your media drive?"
- - Creates the VM (or LXC container!) on your behalf
- - Allocates resources
- - Performs initial setup
+Hydroxide defines resources with two portable files: `compute.yaml` and `service.yaml`. These two work together to deploy an instance.
 
-End goal: you can view your service’s health and access it at any time from Hydroxide.
+`compute.yaml` defines *how* to run a VM.
 
-It also keeps services in sync, running automations to handle things like:
- - Ensuring your uploaded SSH keys work across all services
- - Keeping Docker images, system packages, etc. up to date
- - Making sure certain system tools (eg. your neovim config) exists across services
- - And much more!
+```yaml
+version: 1
+resources:
+  cpu:
+    cores: 4
+  ram:
+    amount: 8192
+  gpu:
+    type: vgpu # NVIDIA, anyone?
+    vram: 1024
+  disk:
+    - id: boot
+      type: boot # Easily define default disk locations
+      size: 16384
+  network:
+    ports: # Native firewalling
+	     - 80:80/http  # Maybe you have HTTP...
+	     - 443:8096/https # ... or HTTPS...
+	     - 25:25/tcp   # ... or SMTP for some reason
+    bridges:
+      - name: vmbr0
+        ipv4: dhcp
+        ipv6: slaac
+runtime:
+  os: hydroxide/image/ubuntu-24-lts
+  # or something a little simpler:
+  # os: hydroxide/image/debian-13-trixie
+  # or something more... rolling?
+  # os: spacedouut/hyd-image/endevouros-20260325
+
+```
+
+`service.yaml` defines *why* to run a VM.
+
+```yaml
+version: 1
+catalog:
+  name: jellyfin
+  friendly: Jellyfin
+  description: Media server
+meta:
+  author: hydroxide # In relation to the image file, but I digress.
+provision:
+  packages:
+    - jellyfin
+  hooks:
+    install:
+      - systemctl enable jellyfin
+    start:
+      - systemctl start jellyfin
+  health:
+    type: http
+    action: http://{service}:8096/health
+    timeout:
+      success: 120s
+      failed: 60s
+```
+
+Of course, these two are portable in nature. Mix and match them, run whenever.
+
+There's more to Hydroxide than YAML files though. Including but most definitely *not* limited to:
+ - IAM based on PAM authentication
+ - SSH key login and sync
+ - A CLI
+ - ... and more to come in the future!
 
 ## How do I install?
 
